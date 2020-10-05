@@ -154,7 +154,7 @@ if(__name__=='__main__'):
             break
     time_pmkid_end      =   time.time()
     pmkid_time_elapsed  =   time_pmkid_end - time_pmkid_start
-    print(get_time() + ' pmkid request finished in ' + '%.3f'%(pmkid_time_elapsed) + ' seconds')
+    print(get_time() + ' pmkid request finished in ' + '%.3f'%(pmkid_time_elapsed) + ' s')
     
     if(pmkid_found == False or crack == None):
         print(get_time() + ' DONE!')
