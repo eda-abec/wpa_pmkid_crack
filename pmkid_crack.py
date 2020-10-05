@@ -50,9 +50,9 @@ if(__name__=='__main__'):
     argument_parser =   argparse.ArgumentParser(usage=None,add_help=False)
     argument_parser.add_argument('-h','--help'      ,action='store_true',default=False                 ,dest='help'      ,required=False  )
     argument_parser.add_argument('-v','--version'   ,action='store_true',default=False                 ,dest='version'   ,required=False  )
-    argument_parser.add_argument('-i','--interface' ,action='store'     ,default=None                  ,dest='iface'     ,required=False  )
-    argument_parser.add_argument('-b','--bssid'     ,action='store'     ,default=None                  ,dest='bssid'     ,required=False  )
-    argument_parser.add_argument('-e','--essid'     ,action='store'     ,default=None                  ,dest='essid'     ,required=False  )
+    argument_parser.add_argument('-i','--interface' ,action='store'     ,default=None                  ,dest='iface'     ,required=True   )
+    argument_parser.add_argument('-b','--bssid'     ,action='store'     ,default=None                  ,dest='bssid'     ,required=True   )
+    argument_parser.add_argument('-e','--essid'     ,action='store'     ,default=None                  ,dest='essid'     ,required=True   )
     argument_parser.add_argument('-t','--time'      ,action='store'     ,default=30                    ,dest='max_time'  ,required=False  )
     argument_parser.add_argument('-c','--crack'     ,action='store_true',default=None                  ,dest='crack'     ,required=False  )
     argument_parser.add_argument('-d','--dictionary',action='store'     ,default=None                  ,dest='dictionary',required=False  )
@@ -82,11 +82,6 @@ if(__name__=='__main__'):
         print_usage()
         sys.exit(0)
     else:
-        # by all means, setting ALL args to required=False is not the best course of action... but... well...
-        if(iface==None or bssid==None or essid==None):
-            print_usage()
-            print('-i|--interface , -b|--bssid and -e|--essid are mandatory')
-            sys.exit(1)
         if(crack==True and ( (password_dictionary_file==None and password_mask==None) or (password_dictionary_file!=None and password_mask!=None) )  ):
             print_usage()
             print('If -c|--crack is specified, -d|--dictionary XOR -m|--mask must be specified as well')
