@@ -146,7 +146,7 @@ if(__name__=='__main__'):
         current_line = current_line.strip()
         if('RSN: PMKID from Authenticator - hexdump' in current_line):
             hex_pmkid   =   current_line.split(':')[2].replace(' ','').upper()
-            whole_hash  =   hex_pmkid+'*'+bssid_hex+'*'+iface_mac+'*'+essid_hex
+            whole_hash  =   hex_pmkid+'*'+bssid_hex+'*'+iface_mac+'*'+essid_hex.decode('utf-8')
             print('\t\t\t'+whole_hash)
             break
     time_pmkid_end      =   time.time()
