@@ -34,7 +34,7 @@ def print_usage():
     result  +=  "[-p] | [--password]   foo password used by wpa_supplicant.     Defaults to 'spameggs'"+"\n"
     result  +=  "\n"
     result  +=  "If -c is specified, hashcat will be called. Otherwise, PMKID hash (if any) will just be displayed"+"\n"
-    result  +=  "If -c is specified, pmkid output hash will be stored in -f value, and -d or -m needs to be specified\n"
+    result  +=  "If -c is specified, pmkid output hash will be stored in -f value, and -d or -m needs to be specified"+"\n"
     result  +=  "\n"
     result  +=  "\n"
     result  +=  "hashcat version cannot easily be infered. Depending on how it was installed, hashcat -V could display"+"\n"
@@ -85,7 +85,7 @@ if(__name__=='__main__'):
         print_usage()
         sys.exit(0)
     else:
-        if(crack==True and ( (password_dictionary_file==None and password_mask==None) or (password_dictionary_file!=None and password_mask!=None) )  ):
+        if(crack==True and ((password_dictionary_file==None and password_mask==None) or (password_dictionary_file!=None and password_mask!=None))):
             print_usage()
             print('If -c|--crack is specified, -d|--dictionary XOR -m|--mask must be specified as well')
             sys.exit(1)
@@ -95,16 +95,16 @@ if(__name__=='__main__'):
     essid_hex           =   binascii.hexlify(essid.encode('utf-8')).upper()
     available_ifaces    =   netifaces.interfaces()
     if(iface not in available_ifaces):
-        print('selected interface "'+iface+'" doesnt exist: '+str(available_ifaces))
+        print('selected interface "' + iface + '" doesn\'t exist: ' + str(available_ifaces))
         sys.exit(1)
     iface_mac           =   netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'].replace(':','').upper()
 
 
     # 1) call wpa_passphrase to generate wpa_supplicant file; with foo password
-    parameter_list          =   ['wpa_passphrase',essid,wpa_supplicant_password,'>',tmp_file]
+    parameter_list          =   ['wpa_passphrase', essid,wpa_supplicant_password, '>', tmp_file]
     parameter_list_string   =   ' '.join(parameter_list)
-    print(get_time()+' calling wpa_passphrase as:\n'+parameter_list_string)
-    try:    subprocess.check_output(parameter_list_string,shell=True)   # shel=True ===> arg must be string, not list
+    print(get_time() + ' calling wpa_passphrase as:\n' + parameter_list_string)
+    try:    subprocess.check_output(parameter_list_string, shell=True)   # shel=True ===> arg must be string, not list
     except: pass
 
     time_pmkid_start        =   None
@@ -114,16 +114,16 @@ if(__name__=='__main__'):
     
     # 2) call wpa_supplicant to retrieve the PMKID
     time_pmkid_start        =   time.time()
-    parameter_list          =   ['wpa_supplicant','-c',tmp_file,'-i',iface,'-dd']
+    parameter_list          =   ['wpa_supplicant', '-c', tmp_file, '-i', iface, '-dd']
     parameter_list_string   =   ' '.join(parameter_list)
     cmd_output              =   None
-    print(get_time()+' calling wpa_supplicant as:\n'+parameter_list_string)
+    print(get_time() + ' calling wpa_supplicant as:\n' + parameter_list_string)
     
     
     
     pmkid_found             =   False
     whole_hash              =   None
-    child                   =   pexpect.spawn(parameter_list_string,timeout=max_time+1)
+    child                   =   pexpect.spawn(parameter_list_string, timeout=max_time+1)
     try:
         child.expect('.*PMKID from Authenticator.*')
         print(get_time()+' pmkid retrieved!')
@@ -137,10 +137,10 @@ if(__name__=='__main__'):
         pass
     except Exception as e:
         pass
-    if(pmkid_found==True):
-        cmd_output  =   child.after
+    if(pmkid_found == True):
+        cmd_output = child.after
     else:
-        cmd_output  =   child.before
+        cmd_output = child.before
     
     
     cmd_output          =   cmd_output.decode('utf-8')
@@ -149,22 +149,22 @@ if(__name__=='__main__'):
         current_line = current_line.strip()
         if('RSN: PMKID from Authenticator - hexdump' in current_line):
             hex_pmkid   =   current_line.split(':')[2].replace(' ','').upper()
-            whole_hash  =   hex_pmkid+'*'+bssid_hex+'*'+iface_mac+'*'+essid_hex.decode('utf-8')
-            print('\n'+whole_hash+'\n')
+            whole_hash  =   hex_pmkid + '*' + bssid_hex + '*' + iface_mac + '*' + essid_hex.decode('utf-8')
+            print('\n' + whole_hash + '\n')
             break
     time_pmkid_end      =   time.time()
     pmkid_time_elapsed  =   time_pmkid_end - time_pmkid_start
-    print(get_time()+' pmkid request finished in '+'%.3f'%(pmkid_time_elapsed)+' seconds')
+    print(get_time() + ' pmkid request finished in ' + '%.3f'%(pmkid_time_elapsed) + ' seconds')
     
-    if(pmkid_found==False or crack==None):
-        print(get_time()+' DONE!')
+    if(pmkid_found == False or crack == None):
+        print(get_time() + ' DONE!')
         sys.exit(0)
     else:
         # copy the pmkid whole hash to the -f file
-        with open(tmp_file,'w') as fd_hash_file:
+        with open(tmp_file, 'w') as fd_hash_file:
             fd_hash_file.write(whole_hash)
         print('TODO! should call hashcat such as')
-        print('hashcat -m 16800 '+tmp_file+' <dictionary_file>|<mask>')
+        print('hashcat -m 16800 ' + tmp_file + ' <dictionary_file>|<mask>')
            
-        print(get_time()+' DONE!')
+        print(get_time() + ' DONE!')
 
