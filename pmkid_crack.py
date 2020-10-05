@@ -56,7 +56,7 @@ if(__name__=='__main__'):
     argument_parser.add_argument('-i','--interface' ,action='store'     ,default=None                  ,dest='iface'     ,required=True   )
     argument_parser.add_argument('-b','--bssid'     ,action='store'     ,default=None                  ,dest='bssid'     ,required=True   )
     argument_parser.add_argument('-e','--essid'     ,action='store'     ,default=None                  ,dest='essid'     ,required=True   )
-    argument_parser.add_argument('-t','--time'      ,action='store'     ,default=30                    ,dest='max_time'  ,required=False  )
+    argument_parser.add_argument('-t','--timeout'   ,action='store'     ,default=30                    ,dest='max_time'  ,required=False  )
     argument_parser.add_argument('-c','--crack'     ,action='store_true',default=None                  ,dest='crack'     ,required=False  )
     argument_parser.add_argument('-d','--dictionary',action='store'     ,default=None                  ,dest='dictionary',required=False  )
     argument_parser.add_argument('-f','--file'      ,action='store'     ,default='./wpa_passphrase.cnf',dest='file'      ,required=False  )
