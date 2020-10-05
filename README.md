@@ -1,12 +1,22 @@
 # wpa_pmkid_crack
-python implementation of the attack discovered by @jsteube , described at https://hashcat.net/forum/thread-7717.html
+Python implementation of the attack discovered by @jsteube, described at https://hashcat.net/forum/thread-7717.html
 
-It just calls wpa_passphrase to generate a conf file
+It calls wpa_passphrase to generate a conf file and a wpa_supplicant to obtain the PMKID hash
 
-,wpa_supplicant to force the generation of the pmkid hash
+## Features
+- generates a hash file, which can be passed to hashcat (`-m 16800`)
+- timeout option
+- Termux compatible (root required, but __not__ monitor mode)
+- more to come :)
 
-,generates the 16800-format hash
+## Example usage
 
-,and __should__ call hashcat to crack the hash.
+```
+sudo python3 ./pmkid_crack.py -i wlan0 -e w1f1 -b 00:00:0A:BB:28:FC
+```
 
-Tested on python 3.5, should be ok with any 3.*
+## Bottom line
+
+Tested on Python 3.8.2, should work with any 3.*
+
+Thanks to @glezo1 for original script
