@@ -103,7 +103,7 @@ if(__name__=='__main__'):
     # 1) call wpa_passphrase to generate wpa_supplicant file; with foo password
     parameter_list          =   ['wpa_passphrase',essid,wpa_supplicant_password,'>',tmp_file]
     parameter_list_string   =   ' '.join(parameter_list)
-    print(get_time()+' calling wpa_passphrase as: '+parameter_list_string)
+    print(get_time()+' calling wpa_passphrase as:\n'+parameter_list_string)
     try:    subprocess.check_output(parameter_list_string,shell=True)   # shel=True ===> arg must be string, not list
     except: pass
 
@@ -117,7 +117,7 @@ if(__name__=='__main__'):
     parameter_list          =   ['wpa_supplicant','-c',tmp_file,'-i',iface,'-dd']
     parameter_list_string   =   ' '.join(parameter_list)
     cmd_output              =   None
-    print(get_time()+' calling wpa_supplicant as: '+parameter_list_string)
+    print(get_time()+' calling wpa_supplicant as:\n'+parameter_list_string)
     
     
     
@@ -150,7 +150,7 @@ if(__name__=='__main__'):
         if('RSN: PMKID from Authenticator - hexdump' in current_line):
             hex_pmkid   =   current_line.split(':')[2].replace(' ','').upper()
             whole_hash  =   hex_pmkid+'*'+bssid_hex+'*'+iface_mac+'*'+essid_hex.decode('utf-8')
-            print('\t\t\t'+whole_hash)
+            print('\n'+whole_hash+'\n')
             break
     time_pmkid_end      =   time.time()
     pmkid_time_elapsed  =   time_pmkid_end - time_pmkid_start
