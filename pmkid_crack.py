@@ -88,7 +88,7 @@ if(__name__=='__main__'):
             sys.exit(1)
     
     
-    bssid_hex           =   bssid.replace(':','').upper()
+    bssid_hex           =   bssid.replace(':','').replace('-','').upper()
     essid_hex           =   binascii.hexlify(essid.encode('utf-8')).upper()
     available_ifaces    =   netifaces.interfaces()
     if(iface not in available_ifaces):
