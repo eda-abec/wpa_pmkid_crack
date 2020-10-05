@@ -75,7 +75,7 @@ if(__name__=='__main__'):
     password_mask               =   argument_parser_result.mask
 
     
-    if(  option_version):
+    if(option_version):
         print(current_version)
         sys.exit(0)
     elif(option_help):
