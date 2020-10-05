@@ -13,6 +13,9 @@ try:    import netifaces
 except: print('netifaces required, run: pip install netifaces');    sys.exit(1)
 
 
+def get_time():
+    return datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+    
 #----------------------------------------------------------------------------------
 def print_usage():
     result  =   "pmkid_crack.py"+"\n"
@@ -100,7 +103,7 @@ if(__name__=='__main__'):
     # 1) call wpa_passphrase to generate wpa_supplicant file; with foo password
     parameter_list          =   ['wpa_passphrase',essid,wpa_supplicant_password,'>',tmp_file]
     parameter_list_string   =   ' '.join(parameter_list)
-    print(datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')+' calling wpa_passphrase as: '+parameter_list_string)
+    print(get_time()+' calling wpa_passphrase as: '+parameter_list_string)
     try:    subprocess.check_output(parameter_list_string,shell=True)   # shel=True ===> arg must be string, not list
     except: pass
 
@@ -114,7 +117,7 @@ if(__name__=='__main__'):
     parameter_list          =   ['wpa_supplicant','-c',tmp_file,'-i',iface,'-dd']
     parameter_list_string   =   ' '.join(parameter_list)
     cmd_output              =   None
-    print(datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')+' calling wpa_supplicant as: '+parameter_list_string)
+    print(get_time()+' calling wpa_supplicant as: '+parameter_list_string)
     
     
     
@@ -123,7 +126,7 @@ if(__name__=='__main__'):
     child                   =   pexpect.spawn(parameter_list_string,timeout=max_time+1)
     try:
         child.expect('.*PMKID from Authenticator.*')
-        print(datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')+' pmkid retrieved!')
+        print(get_time()+' pmkid retrieved!')
         child.sendcontrol('c')
         pmkid_found = True
     except pexpect.exceptions.EOF as e:
@@ -151,10 +154,10 @@ if(__name__=='__main__'):
             break
     time_pmkid_end      =   time.time()
     pmkid_time_elapsed  =   time_pmkid_end - time_pmkid_start
-    print(datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')+' pmkid request finished in '+'%.3f'%(pmkid_time_elapsed)+' seconds')
+    print(get_time()+' pmkid request finished in '+'%.3f'%(pmkid_time_elapsed)+' seconds')
     
     if(pmkid_found==False or crack==None):
-        print(datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')+' DONE!')
+        print(get_time()+' DONE!')
         sys.exit(0)
     else:
         # copy the pmkid whole hash to the -f file
@@ -163,5 +166,5 @@ if(__name__=='__main__'):
         print('TODO! should call hashcat such as')
         print('hashcat -m 16800 '+tmp_file+' <dictionary_file>|<mask>')
            
-        print(datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')+' DONE!')
+        print(get_time()+' DONE!')
 
