@@ -136,6 +136,9 @@ if(__name__=='__main__'):
         print(get_time() + ' timeout')
         print("Note: you can change the limit with -t <seconds>")
         sys.exit(0)
+    except KeyboardInterrupt:
+        print("\nAborting…")
+        sys.exit(0)
     except Exception as e:
         pass
     if(pmkid_found == True):
