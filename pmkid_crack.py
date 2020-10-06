@@ -130,11 +130,12 @@ if(__name__=='__main__'):
         child.sendcontrol('c')
         pmkid_found = True
     except pexpect.exceptions.EOF as e:
-        # the command ended without matching the pexpect pattern
-        pass
+        print(get_time() + ' did not receive PMKID')
+        sys.exit(0)
     except pexpect.exceptions.TIMEOUT as e:
-        # the command timeout (pexpect killed it) without matching the pexpect pattern
-        pass
+        print(get_time() + ' timeout')
+        print("Note: you can change the limit with -t <seconds>")
+        sys.exit(0)
     except Exception as e:
         pass
     if(pmkid_found == True):
