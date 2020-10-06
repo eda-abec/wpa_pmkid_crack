@@ -123,7 +123,7 @@ if(__name__=='__main__'):
     
     pmkid_found             =   False
     whole_hash              =   None
-    child                   =   pexpect.spawn(parameter_list_string, timeout=max_time+1)
+    child                   =   pexpect.spawn(parameter_list_string, timeout=int(max_time))
     try:
         child.expect('.*PMKID from Authenticator.*')
         print(get_time()+' pmkid retrieved!')
