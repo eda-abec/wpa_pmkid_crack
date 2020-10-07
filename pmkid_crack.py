@@ -5,6 +5,9 @@ import subprocess
 import binascii
 import time
 import datetime
+import os
+import re
+import codecs
 try:    import argparse
 except: print('argparse required, run: pip install argparse');     sys.exit(1)
 try:    import pexpect
@@ -15,7 +18,186 @@ except: print('netifaces required, run: pip install netifaces');    sys.exit(1)
 
 def get_time():
     return datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-    
+
+
+# class taken from (and edited)
+# https://github.com/drygdryg/OneShot/blob/master/oneshot.py
+class WiFiScanner():
+    """docstring for WiFiScanner"""
+    def __init__(self, interface):
+        self.interface = interface
+
+        reports_fname = os.path.dirname(os.path.realpath(__file__)) + '/reports/stored.csv'
+        try:
+            with open(reports_fname, 'r', newline='', encoding='utf-8', errors='replace') as file:
+                csvReader = csv.reader(file, delimiter=';', quoting=csv.QUOTE_ALL)
+                # Skip header
+                next(csvReader)
+                self.stored = []
+                for row in csvReader:
+                    self.stored.append(
+                        (
+                            row[1],   # BSSID
+                            row[2]    # ESSID
+                        )
+                    )
+        except FileNotFoundError:
+            self.stored = []
+
+    def iw_scanner(self):
+        '''Parsing iw scan results'''
+        def handle_network(line, result, networks):
+            networks.append(
+                    {
+                        'Security type': 'Unknown',
+                        'WPS': False,
+                        'WPS locked': False,
+                        'Model': '',
+                        'Model number': '',
+                        'Device name': ''
+                     }
+                )
+            networks[-1]['BSSID'] = result.group(1).upper()
+
+        def handle_essid(line, result, networks):
+            d = result.group(1)
+            networks[-1]['ESSID'] = codecs.decode(d, 'unicode-escape').encode('latin1').decode('utf-8', errors='replace')
+
+        def handle_level(line, result, networks):
+            networks[-1]['Level'] = int(float(result.group(1)))
+
+        def handle_securityType(line, result, networks):
+            sec = networks[-1]['Security type']
+            if result.group(1) == 'capability':
+                if 'Privacy' in result.group(2):
+                    sec = 'WEP'
+                else:
+                    sec = 'Open'
+            elif sec == 'WEP':
+                if result.group(1) == 'RSN':
+                    sec = 'WPA2'
+                elif result.group(1) == 'WPA':
+                    sec = 'WPA'
+            elif sec == 'WPA':
+                if result.group(1) == 'RSN':
+                    sec = 'WPA/WPA2'
+            elif sec == 'WPA2':
+                if result.group(1) == 'WPA':
+                    sec = 'WPA/WPA2'
+            networks[-1]['Security type'] = sec
+
+        def handle_wps(line, result, networks):
+            networks[-1]['WPS'] = result.group(1)
+
+        def handle_wpsLocked(line, result, networks):
+            flag = int(result.group(1), 16)
+            if flag:
+                networks[-1]['WPS locked'] = True
+
+        def handle_model(line, result, networks):
+            d = result.group(1)
+            networks[-1]['Model'] = codecs.decode(d, 'unicode-escape').encode('latin1').decode('utf-8', errors='replace')
+
+        def handle_modelNumber(line, result, networks):
+            d = result.group(1)
+            networks[-1]['Model number'] = codecs.decode(d, 'unicode-escape').encode('latin1').decode('utf-8', errors='replace')
+
+        def handle_deviceName(line, result, networks):
+            d = result.group(1)
+            networks[-1]['Device name'] = codecs.decode(d, 'unicode-escape').encode('latin1').decode('utf-8', errors='replace')
+
+        cmd = 'iw dev {} scan'.format(self.interface)
+        proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, encoding='utf-8', errors='replace')
+        lines = proc.stdout.splitlines()
+        networks = []
+        matchers = {
+            re.compile(r'BSS (\S+)( )?\(on \w+\)'): handle_network,
+            re.compile(r'SSID: (.*)'): handle_essid,
+            re.compile(r'signal: ([+-]?([0-9]*[.])?[0-9]+) dBm'): handle_level,
+            re.compile(r'(capability): (.+)'): handle_securityType,
+            re.compile(r'(RSN):\t [*] Version: (\d+)'): handle_securityType,
+            re.compile(r'(WPA):\t [*] Version: (\d+)'): handle_securityType
+        }
+
+        for line in lines:
+            if line.startswith('command failed:'):
+                print('[!] Error:', line)
+                return False
+            line = line.strip('\t')
+            for regexp, handler in matchers.items():
+                res = re.match(regexp, line)
+                if res:
+                    handler(line, res, networks)
+
+        if not networks:
+            return False
+
+        # Sorting by signal level
+        networks.sort(key=lambda x: x['Level'], reverse=True)
+
+        # Printing scanning results as table
+        def truncateStr(s, length, postfix='…'):
+            '''
+            Truncate string with the specified length
+            @s — input string
+            @llength — length of output string
+            '''
+            if len(s) > length:
+                k = length - len(postfix)
+                s = s[:k] + postfix
+            return s
+
+        def colored(text, color=None):
+            '''Returns colored text'''
+            if color:
+                if color == 'yellow':
+                    text = '\033[93m{}\033[00m'.format(text)
+                else:
+                    return text
+            else:
+                return text
+            return text
+        print('Networks list:')
+        print('{:<4} {:<18} {:<25} {:<8} {:<4}'.format(
+            '#', 'BSSID', 'ESSID', 'Sec.', 'PWR'))
+        for i, network in enumerate(networks):
+            number = '{})'.format(i + 1)
+            essid = truncateStr(network['ESSID'], 25)
+            line = '{:<4} {:<18} {:<25} {:<8} {:<4}'.format(
+                number, network['BSSID'], essid,
+                network['Security type'], network['Level'],
+                )
+            if (network['BSSID'], network['ESSID']) in self.stored:
+                print(colored(line, color='yellow'))
+            else:
+                print(line)
+
+        return networks
+
+    def prompt_network(self):
+        networks = self.iw_scanner()
+        if not networks:
+            print('[-] No networks found.')
+            return
+        while 1:
+            try:
+                networkNo = input('Select target (press Enter to refresh): ')
+                if networkNo.lower() in ('r', '0', ''):
+                    return self.prompt_network()
+                elif int(networkNo) in range(1, len(networks) + 1):
+                    selected = networks[int(networkNo) - 1]
+                    return [selected['BSSID'], selected['ESSID']]
+                else:
+                    raise IndexError
+            except Exception:
+                print('Invalid number')
+            else:
+                break
+
+
+
+
 #----------------------------------------------------------------------------------
 def print_usage():
     result  =   "pmkid_crack.py"+"\n"
@@ -24,8 +206,8 @@ def print_usage():
     result  +=  "[-h] | [--help]       display this help"+"\n"
     result  +=  "[-v] | [--version]    show version"+"\n"
     result  +=  "-i   | --interface    managed-mode interface to be used"+"\n"
-    result  +=  "-b   | --bssid        target BSSID"+"\n"
-    result  +=  "-e   | --essid        target ESSID"+"\n"
+    result  +=  "[-b] | [--bssid]      target BSSID"+"\n"
+    result  +=  "[-e] | [--essid]      target ESSID"+"\n"
     result  +=  "[-t] | [--timeout]    max seconds to wait for a PMKID.         Defaults to 30"+"\n"
     result  +=  "[-f] | [--file]       tmp file: wpa_supplicant and pmkid hash. Defaults to ./wpa_passphrase.cnf"+"\n"
     result  +=  "[-c] | [--crack]      crack by haschat (or not).               Defaults to 'do-not-crack'"+"\n"
@@ -54,8 +236,8 @@ if(__name__=='__main__'):
     argument_parser.add_argument('-h','--help'      ,action='store_true',default=False                 ,dest='help'      ,required=False  )
     argument_parser.add_argument('-v','--version'   ,action='store_true',default=False                 ,dest='version'   ,required=False  )
     argument_parser.add_argument('-i','--interface' ,action='store'     ,default=None                  ,dest='iface'     ,required=True   )
-    argument_parser.add_argument('-b','--bssid'     ,action='store'     ,default=None                  ,dest='bssid'     ,required=True   )
-    argument_parser.add_argument('-e','--essid'     ,action='store'     ,default=None                  ,dest='essid'     ,required=True   )
+    argument_parser.add_argument('-b','--bssid'     ,action='store'     ,default=None                  ,dest='bssid'     ,required=False  )
+    argument_parser.add_argument('-e','--essid'     ,action='store'     ,default=None                  ,dest='essid'     ,required=False  )
     argument_parser.add_argument('-t','--timeout'   ,action='store'     ,default=30                    ,dest='max_time'  ,required=False  )
     argument_parser.add_argument('-c','--crack'     ,action='store_true',default=None                  ,dest='crack'     ,required=False  )
     argument_parser.add_argument('-d','--dictionary',action='store'     ,default=None                  ,dest='dictionary',required=False  )
@@ -90,6 +272,14 @@ if(__name__=='__main__'):
             print('If -c|--crack is specified, -d|--dictionary XOR -m|--mask must be specified as well')
             sys.exit(1)
     
+    try:
+        if bssid == None and essid == None:
+            scanner = WiFiScanner(iface)
+            bssid, essid = scanner.prompt_network()
+            print("")
+    except KeyboardInterrupt:
+        print("\nAborting…")
+        sys.exit(0)
     
     bssid_hex           =   bssid.replace(':','').replace('-','').upper()
     essid_hex           =   binascii.hexlify(essid.encode('utf-8')).upper()
