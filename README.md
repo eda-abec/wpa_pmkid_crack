@@ -1,7 +1,7 @@
 # wpa_pmkid_crack
 Python implementation of the attack discovered by @jsteube, described at https://hashcat.net/forum/thread-7717.html
 
-It calls wpa_passphrase to generate a .conf file and a wpa_supplicant to obtain the PMKID hash
+It calls `wpa_passphrase` to generate a .conf file and a `wpa_supplicant` to obtain the PMKID hash
 
 ## Features
 - generates a hash file, which can be passed to hashcat (`-m 16800`)
@@ -17,7 +17,7 @@ It calls wpa_passphrase to generate a .conf file and a wpa_supplicant to obtain 
 - wpa_supplicant, wpa_passphrase
 - iw
 
-## Setup
+## Installing
 ```
 git clone https://github.com/eda-abec/wpa_pmkid_crack.git
 ```
@@ -41,7 +41,7 @@ pmkid_crack.py
 [-p] | [--password]   foo password used by wpa_supplicant.     Defaults to 'spameggs'
 ```
 
-## Example usage
+## Example Usage
 
 To scan for networks and select one,
 ```
@@ -53,7 +53,7 @@ Or specify one:
 sudo python3 pmkid_crack.py -i wlan0 -e w1f1 -b 00:00:0A:BB:28:FC
 ```
 
-## Bottom line
+# Bottom Line
 
 Tested on Python 3.8.2, should work with any 3.*
 
