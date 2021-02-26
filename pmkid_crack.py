@@ -22,6 +22,9 @@ except: print('netifaces required, run: pip install netifaces');    sys.exit(1)
 def get_time():
     return datetime.datetime.strftime(datetime.datetime.now(),'[%m-%d %H:%M:%S]')
 
+def get_realtive_time(starttime):
+    return "[{}]".format('%.2f'%(time.time() - time_pmkid_start))
+
 
 # class taken from (and edited)
 # https://github.com/drygdryg/OneShot/blob/master/oneshot.py
@@ -232,8 +235,8 @@ def print_usage():
 
 
 #-----------------------------------------------------------------------------------
-if(__name__=='__main__'):
-    current_version =   '0.1.1'
+if __name__=='__main__':
+    current_version =   '0.2.0'
     
     
     parser       = argparse.ArgumentParser(usage=None, add_help=False)
@@ -257,7 +260,7 @@ if(__name__=='__main__'):
     iface                       =   args.iface
     bssid                       =   args.bssid
     essid                       =   args.essid
-    max_time                    =   args.max_time
+    max_time                    =   int(args.max_time)
     tmp_file                    =   args.file
     wpa_supplicant_password     =   args.password
     crack                       =   args.crack
@@ -265,17 +268,18 @@ if(__name__=='__main__'):
     password_mask               =   args.mask
 
     
-    if(option_version):
+    if option_version:
         print(current_version)
         sys.exit(0)
-    elif(option_help):
+    elif option_help:
         print_usage()
         sys.exit(0)
     else:
-        if(crack==True and ((password_dictionary_file==None and password_mask==None) or (password_dictionary_file!=None and password_mask!=None))):
+        if(crack == True and ((password_dictionary_file == None and password_mask == None) or (password_dictionary_file != None and password_mask != None))):
             print_usage()
             print('If -c|--crack is specified, -d|--dictionary XOR -m|--mask must be specified as well')
             sys.exit(1)
+    
     
     try:
         if bssid == None and essid == None:
@@ -286,49 +290,51 @@ if(__name__=='__main__'):
         print("\nAborting…")
         sys.exit(0)
     
-    bssid_hex           =   bssid.replace(':','').replace('-','').upper()
-    essid_hex           =   binascii.hexlify(essid.encode('utf-8')).upper()
-    available_ifaces    =   netifaces.interfaces()
-    if(iface not in available_ifaces):
+    time_pmkid_start = time.time()
+    print("{} Starting".format(get_time()))
+    
+    bssid_hex           = bssid.replace(':','').replace('-','').upper()
+    essid_hex           = binascii.hexlify(essid.encode('utf-8')).upper()
+    available_ifaces    = netifaces.interfaces()
+    if iface not in available_ifaces:
         print('selected interface "' + iface + '" doesn\'t exist: ' + str(available_ifaces))
         sys.exit(1)
-    iface_mac           =   netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'].replace(':','').upper()
+    iface_mac           = netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'].replace(':','').upper()
 
 
     # 1) call wpa_passphrase to generate wpa_supplicant file; with foo password
-    parameter_list          =   ['wpa_passphrase', essid,wpa_supplicant_password, '>', tmp_file]
-    parameter_list_string   =   ' '.join(parameter_list)
-    print('{} calling wpa_passphrase as:\n\t{}'.format(get_time(), parameter_list_string))
-    try:    subprocess.check_output(parameter_list_string, shell=True)   # shel=True ===> arg must be string, not list
-    except: pass
+    parameter_list_string   =   ' '.join(['wpa_passphrase', essid,wpa_supplicant_password, '>', tmp_file])
+    print('{} calling wpa_passphrase as:\n\t{}'.format(get_realtive_time(time_pmkid_start), parameter_list_string))
+    try:
+        # shel=True ===> arg must be string, not list
+        subprocess.check_output(parameter_list_string, shell=True)
+    except:
+        pass
 
-    time_pmkid_start        =   None
-    time_pmkid_end          =   None
-    time_hashcat_start      =   None
-    time_hashcat_end        =   None
+    
+    time_pmkid_end          = None
+    time_hashcat_start      = None
+    time_hashcat_end        = None
     
     # 2) call wpa_supplicant to retrieve the PMKID
-    time_pmkid_start        =   time.time()
-    parameter_list          =   ['wpa_supplicant', '-c', tmp_file, '-i', iface, '-dd']
-    parameter_list_string   =   ' '.join(parameter_list)
-    cmd_output              =   None
-    print('{} calling wpa_supplicant as:\n\t{}'.format(get_time(), parameter_list_string))
+    parameter_list_string   = ' '.join(['wpa_supplicant', '-c', tmp_file, '-i', iface, '-dd'])
+    print('{} calling wpa_supplicant as:\n\t{}'.format(get_realtive_time(time_pmkid_start), parameter_list_string))
     
     
     
-    pmkid_found             =   False
-    whole_hash              =   None
-    child                   =   pexpect.spawn(parameter_list_string, timeout=int(max_time))
+    pmkid_found = False
+    whole_hash  = None
+    child       = pexpect.spawn(parameter_list_string, timeout=max_time)
     try:
         child.expect('.*PMKID from Authenticator.*')
-        print('{} PMKID retrieved!'.format(get_time()))
+        print('{} PMKID retrieved!'.format(get_realtive_time(time_pmkid_start)))
         child.sendcontrol('c')
         pmkid_found = True
     except pexpect.exceptions.EOF:
-        print('{} did not receive PMKID'.format(get_time()))
+        print('{} did not receive PMKID'.format(get_realtive_time(time_pmkid_start)))
         sys.exit(2)
     except pexpect.exceptions.TIMEOUT:
-        print('{} timeout'.format(get_time()))
+        print('{} timeout'.format(get_realtive_time(time_pmkid_start)))
         print("Note: you can change the limit with -t <seconds>")
         sys.exit(3)
     except KeyboardInterrupt:
@@ -336,27 +342,26 @@ if(__name__=='__main__'):
         sys.exit(0)
     except Exception:
         pass
-    if(pmkid_found == True):
+    
+    if pmkid_found == True:
         cmd_output = child.after
     else:
         cmd_output = child.before
     
     
-    cmd_output          =   cmd_output.decode('utf-8')
-    cmd_output_lines    =   cmd_output.split('\n')
+    cmd_output_lines = cmd_output.decode('utf-8').split('\n')
     for current_line in cmd_output_lines:
         current_line = current_line.strip()
-        if('RSN: PMKID from Authenticator - hexdump' in current_line):
+        if 'RSN: PMKID from Authenticator - hexdump' in current_line:
             hex_pmkid   =   current_line.split(':')[2].replace(' ','').upper()
-            whole_hash  =   hex_pmkid + '*' + bssid_hex + '*' + iface_mac + '*' + essid_hex.decode('utf-8')
+            whole_hash  = "{}*{}*{}*{}".format(hex_pmkid, bssid_hex, iface_mac, essid_hex.decode('utf-8'))
             print('\n{}\n'.format(whole_hash))
             break
     
-    pmkid_time_elapsed  = time.time() - time_pmkid_start
-    print('{} PMKID request finished in {} s'.format(get_time(), '%.3f'%(pmkid_time_elapsed)))
+    print('{} PMKID request finished'.format(get_realtive_time(time_pmkid_start)))
     
     if pmkid_found == False or crack == None:
-        print('{} DONE!'.format(get_time()))
+        pass
     else:
         # copy the pmkid whole hash to the -f file
         with open(tmp_file, 'w') as fd_hash_file:
@@ -364,5 +369,5 @@ if(__name__=='__main__'):
         print('TODO! should call hashcat such as')
         print('hashcat -m 16800 ' + tmp_file + ' <dictionary_file>|<mask>')
            
-        print('{} DONE!'.format(get_time()))
+    print('{} DONE!'.format(get_realtive_time(time_pmkid_start)))
 
