@@ -330,7 +330,7 @@ if __name__=='__main__':
     try:
         child.expect('.*PMKID from Authenticator.*')
         print('{} PMKID retrieved!'.format(get_realtive_time(time_pmkid_start)))
-        child.sendcontrol('c')
+        child.sendintr()
         pmkid_found = True
     except pexpect.exceptions.EOF:
         print('{} did not receive PMKID'.format(get_realtive_time(time_pmkid_start)))
@@ -341,6 +341,7 @@ if __name__=='__main__':
         sys.exit(3)
     except KeyboardInterrupt:
         print("\nAborting…")
+        child.sendintr()
         sys.exit(0)
     except Exception:
         pass
