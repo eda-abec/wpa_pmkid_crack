@@ -289,6 +289,8 @@ if __name__=='__main__':
     except KeyboardInterrupt:
         print("\nAborting…")
         sys.exit(0)
+    except TypeError:
+        sys.exit(4)
     
     time_pmkid_start = time.time()
     print("{} Starting".format(get_time()))
