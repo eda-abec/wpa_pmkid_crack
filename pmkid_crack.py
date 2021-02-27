@@ -5,10 +5,11 @@ import sys
 import subprocess
 import binascii
 import time
-import datetime
+from datetime import datetime
 import os
 import re
 import codecs
+import csv
 
 
 try:    import argparse
@@ -20,7 +21,7 @@ except: print('netifaces required, run: pip install netifaces');    sys.exit(1)
 
 
 def get_time():
-    return datetime.datetime.strftime(datetime.datetime.now(),'[%m-%d %H:%M:%S]')
+    return datetime.strftime(datetime.now(),'[%m-%d %H:%M:%S]')
 
 def get_realtive_time(starttime):
     return "[{}]".format('%.2f'%(time.time() - time_pmkid_start))
@@ -164,6 +165,8 @@ class WiFiScanner():
             else:
                 return text
             return text
+        
+        
         print('Networks list:')
         print('{:<4} {:<18} {:<25} {:<8} {:<4}'.format(
             '#', 'BSSID', 'ESSID', 'Sec.', 'PWR'))
@@ -208,7 +211,7 @@ class WiFiScanner():
 def print_usage():
     result  =   "pmkid_crack.py"+"\n"
     result  +=  "2018-08-11, github.com/glezo1"+"\n\n"
-    result  +=  "2020-10-05, github.com/eda-abec"+"\n\n"
+    result  +=  "2020 - 2021, github.com/eda-abec"+"\n\n"
     result  +=  "[-h] | [--help]       display this help"+"\n"
     result  +=  "[-v] | [--version]    show version"+"\n"
     result  +=  "-i   | --interface    managed-mode interface to be used"+"\n"
@@ -251,6 +254,7 @@ if __name__=='__main__':
     parser.add_argument('-f','--file'      ,action='store'     ,default='./wpa_passphrase.cnf',dest='file'      ,required=False)
     parser.add_argument('-m','--mask'      ,action='store'     ,default=None                  ,dest='mask'      ,required=False)
     parser.add_argument('-p','--password'  ,action='store'     ,default='spameggs'            ,dest='password'  ,required=False)
+    parser.add_argument('-w', '--write'    ,action='store_true')
     
     
     args                        =   parser.parse_args()
@@ -266,6 +270,7 @@ if __name__=='__main__':
     crack                       =   args.crack
     password_dictionary_file    =   args.dictionary
     password_mask               =   args.mask
+    write_hash                  =   args.write
 
     
     if option_version:
@@ -326,7 +331,7 @@ if __name__=='__main__':
     
     pmkid_found = False
     whole_hash  = None
-    child       = pexpect.spawn(parameter_list_string, timeout=max_time)
+    child       = pexpect.spawn(parameter_list_string, timeout=max_time, encoding='utf-8')
     try:
         child.expect('.*PMKID from Authenticator.*')
         print('{} PMKID retrieved!'.format(get_realtive_time(time_pmkid_start)))
@@ -352,7 +357,7 @@ if __name__=='__main__':
         cmd_output = child.before
     
     
-    cmd_output_lines = cmd_output.decode('utf-8').split('\n')
+    cmd_output_lines = cmd_output.split('\n')
     for current_line in cmd_output_lines:
         current_line = current_line.strip()
         if 'RSN: PMKID from Authenticator - hexdump' in current_line:
@@ -371,6 +376,27 @@ if __name__=='__main__':
             fd_hash_file.write(whole_hash)
         print('TODO! should call hashcat such as')
         print('hashcat -m 16800 ' + tmp_file + ' <dictionary_file>|<mask>')
-           
+    
+    
+    if write_hash:
+        reports_dir = os.path.dirname(os.path.realpath(__file__)) + '/reports/'
+        if not os.path.exists(reports_dir):
+            os.makedirs(reports_dir)
+        filename = reports_dir + 'stored'
+        writeTableHeader = not os.path.isfile(filename + '.csv')
+        dateStr = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+        
+        with open(filename + '.csv', 'a', newline='', encoding='utf-8') as file:
+            csvWriter = csv.writer(file, delimiter=';', quoting=csv.QUOTE_ALL)
+            if writeTableHeader:
+                csvWriter.writerow(['Date', 'BSSID', 'ESSID', 'PMKID Hash'])
+            csvWriter.writerow([dateStr, bssid, essid, whole_hash])
+        
+        with open(filename + '.hash', 'a', encoding='utf-8') as file:
+            file.write(whole_hash + '\n')
+        
+        print('{} Hash saved to {}.csv, {}.hash'.format(get_realtive_time(dateStr), filename, filename))
+    
+
     print('{} DONE!'.format(get_realtive_time(time_pmkid_start)))
 
