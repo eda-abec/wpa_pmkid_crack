@@ -26,6 +26,26 @@ def get_time():
 def get_realtive_time(starttime):
     return "[{}]".format('%.2f'%(time.time() - time_pmkid_start))
 
+    
+# fun taken from
+# https://github.com/drygdryg/OneShot/blob/master/oneshot.py
+def ifaceUp(iface, down=False):
+    if down:
+        action = 'down'
+    else:
+        action = 'up'
+    cmd = 'ip link set {} {}'.format(iface, action)
+    res = subprocess.run(cmd, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+    if res.returncode == 0:
+        return True
+    else:
+        return False
+
+# fun taken from
+# https://github.com/drygdryg/OneShot/blob/master/oneshot.py
+def die(msg):
+    sys.stderr.write(msg + '\n')
+    sys.exit(1)
 
 # class taken from (and edited)
 # https://github.com/drygdryg/OneShot/blob/master/oneshot.py
@@ -285,6 +305,11 @@ if __name__=='__main__':
             print('If -c|--crack is specified, -d|--dictionary XOR -m|--mask must be specified as well')
             sys.exit(1)
     
+    if os.getuid() != 0:
+        die("Run it as root")
+    
+    if not ifaceUp(iface):
+        die('Unable to up interface "{}"'.format(iface))
     
     try:
         if bssid == None and essid == None:
