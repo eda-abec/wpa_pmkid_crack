@@ -8,12 +8,14 @@ It calls `wpa_passphrase` to generate a .conf file and a `wpa_supplicant` to obt
 - timeout option
 - [Termux](https://termux.com/) compatible (root required, but __not__ monitor mode)
 - AP selection from list
+- very basic cracker. In Python, rather a PoC, but runs in Termux :)
 - more to come :)
 
 # Setup
 ## Dependencies
 - Python3
   - argparse, pexpect, netifaces
+  - for cracker: hashlib, hmac, binascii, pbkdf2
 - wpa_supplicant, wpa_passphrase
 - iw
 
@@ -26,7 +28,7 @@ git clone https://github.com/eda-abec/wpa_pmkid_crack.git
 ```
 pmkid_crack.py
 2018-08-11, github.com/glezo1
-2020-10-05, github.com/eda-abec
+2020 - 2021, github.com/eda-abec
 
 [-h] | [--help]       display this help
 [-v] | [--version]    show version
@@ -51,6 +53,15 @@ sudo python3 pmkid_crack.py -i wlan0
 Or specify one:
 ```
 sudo python3 pmkid_crack.py -i wlan0 -e w1f1 -b 00:00:0A:BB:28:FC
+```
+
+### cracker.py
+```
+python3 cracker.py "2582a8281bf9d4308d6f5731d0e61c61*4604ba734d4e*89acf0e761f4*ed487162465a774bfba60eb603a39f3a" wordlist_file
+
+or
+
+wordlist_generator | python3 cracker.py "2582a8281bf9d4308d6f5731d0e61c61*4604ba734d4e*89acf0e761f4*ed487162465a774bfba60eb603a39f3a" stdin
 ```
 
 # Bottom Line
